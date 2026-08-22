@@ -7,173 +7,225 @@ import tempfile
 import time
 import requests
 
-# 1. Page Config
+# 1. Enterprise Viewport Setup
 st.set_page_config(
-    page_title="SPIDER-SENSE | AI Safety Guardian",
-    page_icon="🕷️",
+    page_title="AEGIS Command | Autonomous Edge Vision Matrix",
+    page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Telegram Bot Credentials
 TELEGRAM_BOT_TOKEN = "8944820080:AAEunj6B_dpTfRZewxh7r-W95U4MhU_GO1A"
 TELEGRAM_CHAT_ID = "8608774495"
 
-# 2. Spider-Man Themed Styling (Crimson Red + Electric Blue + Web Accents)
+# 2. Enterprise UI Engine CSS (Commercial Security Operations Center Layout)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Outfit:wght@400;600;700;900&family=JetBrains+Mono:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
     html, body, [class*="css"] {
-        font-family: 'Outfit', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    .spidey-title {
-        font-family: 'Bangers', cursive !important;
-        letter-spacing: 2px;
-    }
-
-    .mono-font {
-        font-family: 'JetBrains Mono', monospace !important;
-    }
-
-    /* Dark Comic Canvas with Spider-Web Glow */
     .stApp {
-        background: radial-gradient(circle at 50% 10%, #1a050b 0%, #060814 60%, #020308 100%);
-        color: #ffffff;
+        background-color: #0b0f17;
+        color: #f3f4f6;
     }
 
-    /* Spider-Man Hero Header */
-    .hero-banner {
-        background: linear-gradient(135deg, rgba(230, 0, 40, 0.35) 0%, rgba(0, 102, 255, 0.3) 100%);
-        border: 2.5px solid #ff003c;
-        border-radius: 22px;
-        padding: 24px 36px;
-        margin-bottom: 24px;
-        box-shadow: 0 0 35px rgba(255, 0, 60, 0.45), inset 0 0 20px rgba(0, 140, 255, 0.2);
+    /* Top Command Header */
+    .top-nav {
+        background: #111827;
+        border-bottom: 1px solid #1f2937;
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: -4rem -4rem 1.5rem -4rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .brand-badge {
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 0.85rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .brand-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -0.3px;
+        margin: 0;
+    }
+
+    .nav-system-status {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        font-size: 0.85rem;
+        color: #9ca3af;
+    }
+
+    .status-dot {
+        height: 8px;
+        width: 8px;
+        background-color: #10b981;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Enterprise Panel Containers */
+    .panel-card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 16px;
+    }
+
+    .panel-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #9ca3af;
+        margin-bottom: 14px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
 
-    .hero-title {
-        font-size: 3rem;
-        color: #ff003c;
-        text-shadow: 0 0 15px #ff003c, 0 0 30px #ff003c, 3px 3px 0px #0055ff;
-        margin: 0;
-        line-height: 1.1;
-    }
-
-    .hero-subtitle {
-        color: #00d4ff;
-        font-size: 1.1rem;
-        font-weight: 700;
-        margin-top: 6px;
-        letter-spacing: 0.5px;
-    }
-
-    /* Spider-Sense Status Cards */
-    .status-card {
-        border-radius: 20px;
-        padding: 24px;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-        transition: all 0.3s ease;
-    }
-
-    /* Green Safe State */
-    .status-normal {
-        background: linear-gradient(135deg, rgba(0, 255, 136, 0.25), rgba(0, 50, 25, 0.4));
-        border: 3px solid #00ff88;
-        box-shadow: 0 0 25px rgba(0, 255, 136, 0.4);
-    }
-
-    /* Crimson Spider-Sense Alert */
-    .status-fall {
-        background: linear-gradient(135deg, rgba(255, 0, 60, 0.45), rgba(80, 0, 15, 0.6));
-        border: 3px solid #ff003c;
-        box-shadow: 0 0 35px rgba(255, 0, 60, 0.7);
-        animation: spider-pulse 1s infinite;
-    }
-
-    /* Electric Amber Intrusion */
-    .status-intrusion {
-        background: linear-gradient(135deg, rgba(255, 170, 0, 0.4), rgba(60, 35, 0, 0.5));
-        border: 3px solid #ffaa00;
-        box-shadow: 0 0 30px rgba(255, 170, 0, 0.6);
-        animation: spider-pulse 1.4s infinite;
-    }
-
-    @keyframes spider-pulse {
-        0% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 0, 60, 0.7); }
-        50% { transform: scale(1.02); box-shadow: 0 0 45px rgba(255, 0, 60, 1), 0 0 20px #00d4ff; }
-        100% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 0, 60, 0.7); }
-    }
-
-    /* Metric Cards */
-    .metric-grid {
+    /* Telemetry KPI Cards */
+    .kpi-row {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
     }
 
-    .metric-card-fall {
-        background: linear-gradient(145deg, rgba(35, 5, 12, 0.9), rgba(15, 2, 5, 0.95));
-        border: 2px solid #ff003c;
-        border-radius: 18px;
-        padding: 22px;
-        text-align: center;
-        box-shadow: 0 0 20px rgba(255, 0, 60, 0.35);
+    .kpi-box {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 8px;
+        padding: 14px;
+        border-left: 4px solid #3b82f6;
     }
 
-    .metric-card-zone {
-        background: linear-gradient(145deg, rgba(5, 20, 45, 0.9), rgba(2, 8, 20, 0.95));
-        border: 2px solid #00d4ff;
-        border-radius: 18px;
-        padding: 22px;
-        text-align: center;
-        box-shadow: 0 0 20px rgba(0, 212, 255, 0.35);
-    }
-
-    .metric-label {
-        font-size: 0.9rem;
-        font-weight: 800;
-        letter-spacing: 1.5px;
+    .kpi-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #9ca3af;
         text-transform: uppercase;
     }
 
-    .metric-value {
-        font-family: 'Bangers', cursive;
-        font-size: 3rem;
-        letter-spacing: 2px;
+    .kpi-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #ffffff;
         margin-top: 4px;
     }
-</style>
-""", unsafe_allow_html=True)
 
-# 3. Top Banner
-st.markdown("""
-<div class="hero-banner">
-    <div>
-        <div class="hero-title spidey-title">🕷️ SPIDER-SENSE // GUARDIAN AI</div>
-        <div class="hero-subtitle">Real-Time Skeletal Fall Detection & Restricted Web-Zone Defense</div>
+    /* Dynamic Incident Alert Cards */
+    .incident-nominal {
+        background: rgba(16, 185, 129, 0.08);
+        border: 1px solid #059669;
+        border-left: 6px solid #10b981;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 14px;
+    }
+
+    .incident-critical {
+        background: rgba(239, 68, 68, 0.12);
+        border: 1px solid #b91c1c;
+        border-left: 6px solid #ef4444;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 14px;
+        animation: critical-pulse 1.2s infinite;
+    }
+
+    .incident-warning {
+        background: rgba(245, 158, 11, 0.12);
+        border: 1px solid #d97706;
+        border-left: 6px solid #f59e0b;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-bottom: 14px;
+    }
+
+    @keyframes critical-pulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    /* Event Audit Table */
+    .audit-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+    }
+
+    .audit-table th {
+        text-align: left;
+        color: #6b7280;
+        padding: 8px;
+        border-bottom: 1px solid #1f2937;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+    }
+
+    .audit-table td {
+        padding: 8px;
+        border-bottom: 1px solid #111827;
+        color: #d1d5db;
+        font-family: 'JetBrains Mono', monospace;
+    }
+</style>
+
+<!-- Top Enterprise Bar -->
+<div class="top-nav">
+    <div class="nav-brand">
+        <span class="brand-badge">AEGIS OS</span>
+        <span class="brand-title">Autonomous Edge Vision & Safety System</span>
     </div>
-    <div style="background: linear-gradient(90deg, #ff003c, #0055ff); border: 2px solid #ffffff; padding: 10px 20px; border-radius: 40px; font-weight: 900; color: #ffffff; letter-spacing: 1px; box-shadow: 0 0 20px rgba(255,0,60,0.8);">
-        SPIDER-NET ACTIVE
+    <div class="nav-system-status">
+        <span><span class="status-dot"></span> EDGE NODE: <strong>ACTIVE (CPU-ACCELERATED)</strong></span>
+        <span>GATEWAY: <strong>192.168.1.104</strong></span>
+        <span>PROTOCOL: <strong>RTSP / H.264</strong></span>
+        <span style="background: #1f2937; padding: 4px 10px; border-radius: 4px; font-weight: 600;">BUILD v4.2.0-PROD</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# 4. Stream Source Selection
-col_ctrl1, col_ctrl2 = st.columns([1, 1])
-with col_ctrl1:
-    input_source = st.radio("⚡ Select Input Stream:", ("Live Webcam Feed", "Upload CCTV Clip"), horizontal=True)
+# 3. Stream Selection Controls (Clean Enterprise Segmented Bar)
+col_mode, col_info = st.columns([2, 1])
+with col_mode:
+    input_source = st.selectbox(
+        "ACTIVE SENSOR / STREAM SOURCE:", 
+        ("Physical Sensor 01 (Integrated HD Camera)", "Enterprise RTSP NVR Stream", "Archived Telemetry Video File"),
+        label_visibility="collapsed"
+    )
 
 if "last_alert_time" not in st.session_state:
     st.session_state.last_alert_time = 0
+
+if "incident_log" not in st.session_state:
+    st.session_state.incident_log = []
 
 def send_telegram_alert(message):
     current_time = time.time()
@@ -186,11 +238,12 @@ def send_telegram_alert(message):
         except Exception:
             pass
 
-# 5. UI Layout
-col_feed, col_telemetry = st.columns([1.65, 1.1])
-video_placeholder = col_feed.empty()
-status_placeholder = col_telemetry.empty()
-metrics_placeholder = col_telemetry.empty()
+# 4. Main Operations Layout
+col_main_stream, col_sidebar_hud = st.columns([1.75, 1.05])
+kpi_placeholder = col_main_stream.empty()
+video_placeholder = col_main_stream.empty()
+status_placeholder = col_sidebar_hud.empty()
+log_placeholder = col_sidebar_hud.empty()
 
 @st.cache_resource
 def load_model():
@@ -201,27 +254,31 @@ model = load_model()
 def process_stream(video_capture):
     fall_counter = 0
     intrusion_counter = 0
+    frame_count = 0
+    start_bench = time.time()
 
     while video_capture.isOpened():
         ret, frame = video_capture.read()
         if not ret:
-            st.info("Feed complete.")
+            st.info("Input stream terminated or buffer empty.")
             break
+
+        frame_count += 1
+        fps = round(frame_count / (time.time() - start_bench + 0.001), 1)
 
         h, w, _ = frame.shape
         zone_x1, zone_y1, zone_x2, zone_y2 = int(w * 0.6), int(h * 0.1), int(w * 0.95), int(h * 0.6)
 
-        # Draw Spider Electric Blue Perimeter
-        cv2.rectangle(frame, (zone_x1, zone_y1), (zone_x2, zone_y2), (255, 170, 0), 3)
-        cv2.putText(frame, "[ SPIDER WEB ZONE ]", (zone_x1 + 10, zone_y1 + 25), 
-                    cv2.FONT_HERSHEY_DUPLEX, 0.6, (255, 170, 0), 2)
+        # Draw Professional Low-Profile Overlay
+        cv2.rectangle(frame, (zone_x1, zone_y1), (zone_x2, zone_y2), (234, 88, 12), 2)
+        cv2.putText(frame, "RESTRICTED BOUNDARY [ZONE 01]", (zone_x1 + 8, zone_y1 + 20), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, (234, 88, 12), 1)
 
         results = model(frame, conf=0.35, verbose=False)
-        current_status = "NORMAL"
-        badge_style = "status-normal"
-        badge_icon = "🟢"
-        badge_title = "ALL CLEAR // PATROL SECURE"
-        badge_desc = "Subject is standing tall. Spider-Sense is calm."
+        current_status = "NOMINAL"
+        badge_class = "incident-nominal"
+        badge_header = "AREA SECURE // ALL SENSORS NOMINAL"
+        badge_sub = "No biomechanical anomalies or perimeter breaches flagged."
 
         for result in results:
             boxes = result.boxes.xyxy.cpu().numpy() if result.boxes else []
@@ -233,7 +290,6 @@ def process_stream(video_capture):
                 box_h = by2 - by1
                 cx, cy = (bx1 + bx2) // 2, (by1 + by2) // 2
 
-                # Fall Detection Conditions
                 is_box_horizontal = box_w > (box_h * 0.95)
                 is_skeleton_collapsed = False
 
@@ -248,64 +304,103 @@ def process_stream(video_capture):
                         if abs(shoulder_y - hip_y) < 55:
                             is_skeleton_collapsed = True
 
+                timestamp_str = datetime.datetime.now().strftime('%H:%M:%S')
+
+                # Critical Incident: Fall
                 if is_box_horizontal or is_skeleton_collapsed:
-                    current_status = "FALL"
+                    current_status = "CRITICAL"
                     fall_counter += 1
-                    badge_style = "status-fall"
-                    badge_icon = "🚨"
-                    badge_title = "SPIDER-SENSE TINGLING: FALL DETECTED!"
-                    badge_desc = "Person is down on the floor! Emergency dispatch triggered!"
+                    badge_class = "incident-critical"
+                    badge_header = "CRITICAL INCIDENT: POSTURAL COLLAPSE"
+                    badge_sub = "Biomechanical collapse verified. Immediate responder dispatch initiated."
                     
-                    # Glowing Red Box for Fall
-                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (0, 0, 255), 4)
-                    cv2.putText(frame, "!! EMERGENCY FALL !!", (bx1, by1 - 12), 
-                                cv2.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 2)
+                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (239, 68, 68), 2)
+                    cv2.putText(frame, "INCIDENT: PATIENT COLLAPSE", (bx1, by1 - 8), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (239, 68, 68), 2)
                     
-                    alert_msg = f"🚨 *SPIDER-SENSE CRITICAL ALERT*\n*Event:* Person Fall/Collapse Detected!\n*Time:* `{datetime.datetime.now().strftime('%H:%M:%S')}`\n*Location:* Sector 01"
+                    alert_msg = f"🚨 *AEGIS CRITICAL ALERT*\n*Event:* Postural Fall / Collapse\n*Timestamp:* `{timestamp_str}`\n*Device ID:* CAM-01-NORTH"
                     send_telegram_alert(alert_msg)
 
+                    if len(st.session_state.incident_log) == 0 or st.session_state.incident_log[-1]["type"] != "FALL":
+                        st.session_state.incident_log.append({"time": timestamp_str, "type": "FALL", "loc": "CAM-01", "sev": "CRITICAL"})
+
+                # Warning Incident: Intrusion
                 elif zone_x1 < cx < zone_x2 and zone_y1 < cy < zone_y2:
-                    current_status = "INTRUSION"
+                    current_status = "WARNING"
                     intrusion_counter += 1
-                    badge_style = "status-intrusion"
-                    badge_icon = "🕸️"
-                    badge_title = "PERIMETER BREACH: WEB ZONE TRIPPED!"
-                    badge_desc = "Unauthorized movement inside restricted perimeter boundary."
+                    badge_class = "incident-warning"
+                    badge_header = "SECURITY EVENT: BOUNDARY BREACH"
+                    badge_sub = "Unauthorized target detected inside virtual restricted zone [Zone 01]."
                     
-                    # Amber Box for Intrusion
-                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (0, 165, 255), 3)
-                    cv2.putText(frame, "!! INTRUDER IN WEB !!", (bx1, by1 - 12), 
-                                cv2.FONT_HERSHEY_DUPLEX, 0.75, (0, 165, 255), 2)
+                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (245, 158, 11), 2)
+                    cv2.putText(frame, "RESTRICTED AREA BREACH", (bx1, by1 - 8), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (245, 158, 11), 2)
                     
-                    alert_msg = f"🕸️ *SPIDER-SENSE WARNING*\n*Event:* Restricted Web Zone Intruder!\n*Time:* `{datetime.datetime.now().strftime('%H:%M:%S')}`"
+                    alert_msg = f"⚠️ *AEGIS SECURITY EVENT*\n*Event:* Perimeter Intrusion [Zone 01]\n*Timestamp:* `{timestamp_str}`"
                     send_telegram_alert(alert_msg)
 
+                    if len(st.session_state.incident_log) == 0 or st.session_state.incident_log[-1]["type"] != "INTRUSION":
+                        st.session_state.incident_log.append({"time": timestamp_str, "type": "INTRUSION", "loc": "ZONE-01", "sev": "WARNING"})
+
+        # Render Professional Stream Header Overlay
         annotated_frame = results[0].plot() if results else frame
         frame_rgb = cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB)
         video_placeholder.image(frame_rgb, channels="RGB", use_container_width=True)
 
-        # Dynamic Status Banner
-        status_placeholder.markdown(f"""
-        <div class="status-card {badge_style}">
-            <div style="font-size: 3rem; line-height: 1;">{badge_icon}</div>
-            <div>
-                <div style="font-size: 1.35rem; font-weight: 800; letter-spacing: -0.3px;">{badge_title}</div>
-                <div style="font-size: 1rem; opacity: 0.95; margin-top: 4px; font-weight: 500;">{badge_desc}</div>
+        # Top Real-Time KPI Telemetry Tiles
+        kpi_placeholder.markdown(f"""
+        <div class="kpi-row">
+            <div class="kpi-box" style="border-left-color: #3b82f6;">
+                <div class="kpi-label">Processing Throughput</div>
+                <div class="kpi-val">{fps} <span style="font-size: 0.9rem; color: #6b7280;">FPS</span></div>
+            </div>
+            <div class="kpi-box" style="border-left-color: #10b981;">
+                <div class="kpi-label">System Health</div>
+                <div class="kpi-val" style="color: #10b981; font-size: 1.3rem; margin-top: 8px;">OPERATIONAL</div>
+            </div>
+            <div class="kpi-box" style="border-left-color: #ef4444;">
+                <div class="kpi-label">Fall Events</div>
+                <div class="kpi-val" style="color: #f87171;">{fall_counter}</div>
+            </div>
+            <div class="kpi-box" style="border-left-color: #f59e0b;">
+                <div class="kpi-label">Perimeter Breaches</div>
+                <div class="kpi-val" style="color: #fbbf24;">{intrusion_counter}</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Spider-Man Themed HUD Counters
-        metrics_placeholder.markdown(f"""
-        <div class="metric-grid">
-            <div class="metric-card-fall">
-                <div class="metric-label" style="color: #ff003c;">FALL ALERTS</div>
-                <div class="metric-value" style="color: #ff003c;">{fall_counter}</div>
+        # Sidebar Live Status Card
+        status_placeholder.markdown(f"""
+        <div class="panel-card">
+            <div class="panel-title">Real-Time Threat Level</div>
+            <div class="{badge_class}">
+                <div style="font-weight: 700; font-size: 0.95rem;">{badge_header}</div>
+                <div style="font-size: 0.82rem; color: #9ca3af; margin-top: 4px;">{badge_sub}</div>
             </div>
-            <div class="metric-card-zone">
-                <div class="metric-label" style="color: #00d4ff;">WEB BREACHES</div>
-                <div class="metric-value" style="color: #00d4ff;">{intrusion_counter}</div>
-            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Sidebar Live Audit Log
+        recent_events = st.session_state.incident_log[-4:] if st.session_state.incident_log else []
+        log_rows = "".join([
+            f"<tr><td>{e['time']}</td><td style='color:{'#f87171' if e['sev']=='CRITICAL' else '#fbbf24'}; font-weight:700;'>{e['type']}</td><td>{e['loc']}</td><td>{e['sev']}</td></tr>"
+            for e in reversed(recent_events)
+        ])
+        
+        if not log_rows:
+            log_rows = "<tr><td colspan='4' style='color:#6b7280; text-align:center;'>No incidents logged in session</td></tr>"
+
+        log_placeholder.markdown(f"""
+        <div class="panel-card">
+            <div class="panel-title">Live Audit Log (SIEM Dispatch)</div>
+            <table class="audit-table">
+                <thead>
+                    <tr><th>Time</th><th>Incident</th><th>Source</th><th>Severity</th></tr>
+                </thead>
+                <tbody>
+                    {log_rows}
+                </tbody>
+            </table>
         </div>
         """, unsafe_allow_html=True)
 
@@ -313,44 +408,23 @@ def process_stream(video_capture):
 
     video_capture.release()
 
-# 6. Stream Execution
-if input_source == "Live Webcam Feed":
-    cap = cv2.VideoCapture(0)
-    process_stream(cap)
-
-elif input_source == "Upload CCTV Clip":
-    uploaded_file = st.file_uploader("Upload an incident clip (.mp4, .avi, .mov)", type=["mp4", "avi", "mov"])
-    if uploaded_file is not None:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(uploaded_file.read())
-        cap = cv2.VideoCapture(tfile.name)
-        process_stream(cap)
-    else:
-        st.info("👈 Upload a video file above to start the Spider-Sense scanner.")
-        # 6. Stream Execution with Auto-Fallback and DirectShow Support
-if input_source == "Live Webcam Feed":
-    # Try DirectShow (Standard for Windows)
+# 5. Stream Source Router
+if input_source == "Physical Sensor 01 (Integrated HD Camera)":
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    
-    # Fallback to standard backend if DirectShow fails
     if not cap.isOpened():
         cap = cv2.VideoCapture(0)
-        
-    # Fallback to secondary camera (Index 1) if Index 0 is unavailable
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+    process_stream(cap)
 
-    if not cap.isOpened():
-        st.error("⚠️ Could not open webcam. Ensure no other application (Zoom, Teams, Camera App) is using it.")
-    else:
+elif input_source == "Enterprise RTSP NVR Stream":
+    cctv_url = st.text_input("Enter Encrypted RTSP Channel Endpoint:", value="rtsp://admin:pass@192.168.1.100:554/stream1")
+    if st.button("Initialize Video Stream Channel"):
+        cap = cv2.VideoCapture(cctv_url)
         process_stream(cap)
 
-elif input_source == "Upload CCTV Clip":
-    uploaded_file = st.file_uploader("Upload an incident clip (.mp4, .avi, .mov)", type=["mp4", "avi", "mov"])
+elif input_source == "Archived Telemetry Video File":
+    uploaded_file = st.file_uploader("Upload incident recording (.mp4, .avi, .mov)", type=["mp4", "avi", "mov"])
     if uploaded_file is not None:
         tfile = tempfile.NamedTemporaryFile(delete=False)
         tfile.write(uploaded_file.read())
         cap = cv2.VideoCapture(tfile.name)
         process_stream(cap)
-    else:
-        st.info("👈 Upload a video file above to start the Spider-Sense scanner.")
