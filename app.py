@@ -327,3 +327,30 @@ elif input_source == "Upload CCTV Clip":
         process_stream(cap)
     else:
         st.info("👈 Upload a video file above to start the Spider-Sense scanner.")
+        # 6. Stream Execution with Auto-Fallback and DirectShow Support
+if input_source == "Live Webcam Feed":
+    # Try DirectShow (Standard for Windows)
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    
+    # Fallback to standard backend if DirectShow fails
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(0)
+        
+    # Fallback to secondary camera (Index 1) if Index 0 is unavailable
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+
+    if not cap.isOpened():
+        st.error("⚠️ Could not open webcam. Ensure no other application (Zoom, Teams, Camera App) is using it.")
+    else:
+        process_stream(cap)
+
+elif input_source == "Upload CCTV Clip":
+    uploaded_file = st.file_uploader("Upload an incident clip (.mp4, .avi, .mov)", type=["mp4", "avi", "mov"])
+    if uploaded_file is not None:
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile.write(uploaded_file.read())
+        cap = cv2.VideoCapture(tfile.name)
+        process_stream(cap)
+    else:
+        st.info("👈 Upload a video file above to start the Spider-Sense scanner.")
