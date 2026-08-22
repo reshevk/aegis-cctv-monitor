@@ -4,4 +4,4 @@ numpy==1.26.4
 ultralytics==8.2.103
 requests==2.32.3
 streamlit-webrtc==0.47.9
-av==12.3.0
+av>=13.1.0
