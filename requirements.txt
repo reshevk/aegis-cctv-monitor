@@ -1,7 +1,7 @@
-streamlit==1.38.0
-opencv-python-headless==4.10.0.84
-numpy==1.26.4
-ultralytics==8.2.103
-requests==2.32.3
-streamlit-webrtc==0.47.9
-av>=13.1.0
+streamlit>=1.39
+opencv-python-headless>=4.10
+numpy>=1.26
+ultralytics>=8.2
+requests>=2.32
+streamlit-webrtc>=0.47
+av>=13.1
