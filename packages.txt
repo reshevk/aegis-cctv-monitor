@@ -1,5 +1,8 @@
 libgl1
 pkg-config
+zlib1g-dev
+libjpeg-dev
+libpng-dev
 libavformat-dev
 libavcodec-dev
 libavdevice-dev
