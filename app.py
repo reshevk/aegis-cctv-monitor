@@ -7,7 +7,7 @@ import tempfile
 import time
 import requests
 
-# 1. Enterprise Viewport Setup
+# 1. Page Configuration
 st.set_page_config(
     page_title="AEGIS RED | Edge Vision Matrix",
     page_icon="🚨",
@@ -18,16 +18,16 @@ st.set_page_config(
 TELEGRAM_BOT_TOKEN = "8944820080:AAEunj6B_dpTfRZewxh7r-W95U4MhU_GO1A"
 TELEGRAM_CHAT_ID = "8608774495"
 
-# 2. Executive Obsidian Crimson Theme (Fixed Top Spacing & Layout Alignment)
+# 2. Executive Obsidian Crimson Theme with Clean Top Offset
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
 
-    /* Reset Streamlit default padding to fix header cutoff */
+    /* Shift page downward cleanly beneath the Streamlit top navbar */
     .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
-        max-width: 96% !important;
+        padding-top: 5rem !important;
+        padding-bottom: 2.5rem !important;
+        max-width: 95% !important;
     }
 
     html, body, [class*="css"] {
@@ -44,11 +44,11 @@ st.markdown("""
         background: linear-gradient(135deg, rgba(38, 7, 13, 0.95), rgba(18, 3, 6, 0.98));
         border: 1.5px solid #ff1744;
         border-radius: 12px;
-        padding: 14px 24px;
+        padding: 16px 24px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 18px;
+        margin-bottom: 20px;
         box-shadow: 0 0 25px rgba(255, 23, 68, 0.25);
     }
 
@@ -71,7 +71,7 @@ st.markdown("""
 
     .brand-title {
         font-family: 'Space Grotesk', sans-serif !important;
-        font-size: 1.25rem;
+        font-size: 1.35rem;
         font-weight: 800;
         color: #ffffff;
         letter-spacing: -0.3px;
@@ -95,7 +95,7 @@ st.markdown("""
         box-shadow: 0 0 10px #00e676;
     }
 
-    /* KPI Row */
+    /* 4-Tile Telemetry Row */
     .kpi-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -182,7 +182,7 @@ st.markdown("""
         100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
     }
 
-    /* SIEM Table */
+    /* SIEM Audit Table */
     .audit-table {
         width: 100%;
         border-collapse: collapse;
@@ -206,7 +206,7 @@ st.markdown("""
     }
 </style>
 
-<!-- Top Command Header -->
+<!-- Visible Header with Breathing Room -->
 <div class="top-nav">
     <div class="nav-brand">
         <span class="brand-badge">AEGIS RED</span>
@@ -257,6 +257,24 @@ def load_model():
 
 model = load_model()
 
+def get_working_camera():
+    """Robust camera locator checking DirectShow on Windows."""
+    for index in [0, 1, 2]:
+        cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
+        if cap.isOpened():
+            ret, test_frame = cap.read()
+            if ret and test_frame is not None:
+                return cap
+            cap.release()
+        
+        cap = cv2.VideoCapture(index)
+        if cap.isOpened():
+            ret, test_frame = cap.read()
+            if ret and test_frame is not None:
+                return cap
+            cap.release()
+    return None
+
 def process_stream(video_capture):
     fall_counter = 0
     intrusion_counter = 0
@@ -265,8 +283,8 @@ def process_stream(video_capture):
 
     while video_capture.isOpened():
         ret, frame = video_capture.read()
-        if not ret:
-            st.info("Input stream terminated or buffer empty.")
+        if not ret or frame is None:
+            st.warning("Video stream ended or frame could not be read.")
             break
 
         frame_count += 1
@@ -312,7 +330,7 @@ def process_stream(video_capture):
 
                 timestamp_str = datetime.datetime.now().strftime('%H:%M:%S')
 
-                # Critical Incident: Fall Detected
+                # Critical Incident: Fall
                 if is_box_horizontal or is_skeleton_collapsed:
                     current_status = "CRITICAL"
                     fall_counter += 1
@@ -330,7 +348,7 @@ def process_stream(video_capture):
                     if len(st.session_state.incident_log) == 0 or st.session_state.incident_log[-1]["type"] != "FALL":
                         st.session_state.incident_log.append({"time": timestamp_str, "type": "FALL", "loc": "CAM-01", "sev": "CRITICAL"})
 
-                # Warning Incident: Boundary Intrusion
+                # Warning Incident: Intrusion
                 elif zone_x1 < cx < zone_x2 and zone_y1 < cy < zone_y2:
                     current_status = "WARNING"
                     intrusion_counter += 1
@@ -415,10 +433,11 @@ def process_stream(video_capture):
 
 # 5. Execution Handlers
 if input_source == "Physical Sensor 01 (Integrated HD Camera)":
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(0)
-    process_stream(cap)
+    cap = get_working_camera()
+    if cap is None:
+        st.error("⚠️ Could not detect an active webcam. Ensure no other application (Teams, Zoom, Windows Camera) is using your webcam.")
+    else:
+        process_stream(cap)
 
 elif input_source == "Physical IP / CCTV Stream (RTSP)":
     cctv_url = st.text_input("Enter Encrypted RTSP Channel Endpoint:", value="rtsp://admin:password@192.168.1.100:554/stream1")
