@@ -7,7 +7,7 @@ import tempfile
 import time
 import requests
 
-# 1. Page Configuration
+# 1. Viewport Config
 st.set_page_config(
     page_title="AEGIS RED | Edge Vision Matrix",
     page_icon="🚨",
@@ -18,16 +18,21 @@ st.set_page_config(
 TELEGRAM_BOT_TOKEN = "8944820080:AAEunj6B_dpTfRZewxh7r-W95U4MhU_GO1A"
 TELEGRAM_CHAT_ID = "8608774495"
 
-# 2. Executive Obsidian Crimson Theme with Clean Top Offset
+# 2. Complete CSS Fix (Hides Default Streamlit Navbar & Fixes Spacing)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
 
-    /* Shift page downward cleanly beneath the Streamlit top navbar */
+    /* Hide Streamlit Header/Footer completely to eliminate top cut-off */
+    header { visibility: hidden !important; height: 0px !important; }
+    #MainMenu { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+
+    /* Natural padding from top */
     .block-container {
-        padding-top: 5rem !important;
-        padding-bottom: 2.5rem !important;
-        max-width: 95% !important;
+        padding-top: 1.2rem !important;
+        padding-bottom: 2rem !important;
+        max-width: 96% !important;
     }
 
     html, body, [class*="css"] {
@@ -206,7 +211,7 @@ st.markdown("""
     }
 </style>
 
-<!-- Visible Header with Breathing Room -->
+<!-- Visible Header -->
 <div class="top-nav">
     <div class="nav-brand">
         <span class="brand-badge">AEGIS RED</span>
@@ -258,8 +263,9 @@ def load_model():
 model = load_model()
 
 def get_working_camera():
-    """Robust camera locator checking DirectShow on Windows."""
+    """Robust camera locator checking backends and indices."""
     for index in [0, 1, 2]:
+        # Try DirectShow first on Windows
         cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
         if cap.isOpened():
             ret, test_frame = cap.read()
@@ -267,6 +273,7 @@ def get_working_camera():
                 return cap
             cap.release()
         
+        # Fallback to default backend
         cap = cv2.VideoCapture(index)
         if cap.isOpened():
             ret, test_frame = cap.read()
@@ -392,7 +399,7 @@ def process_stream(video_capture):
         </div>
         """, unsafe_allow_html=True)
 
-        # Status Card
+        # Threat Matrix Status Card
         status_placeholder.markdown(f"""
         <div class="panel-card">
             <div class="panel-title">Threat Assessment Matrix</div>
@@ -403,7 +410,7 @@ def process_stream(video_capture):
         </div>
         """, unsafe_allow_html=True)
 
-        # Live Audit Log
+        # SIEM Audit Log
         recent_events = st.session_state.incident_log[-4:] if st.session_state.incident_log else []
         log_rows = "".join([
             f"<tr><td>{e['time']}</td><td style='color:{'#ff1744' if e['sev']=='CRITICAL' else '#ff9100'}; font-weight:700;'>{e['type']}</td><td>{e['loc']}</td><td>{e['sev']}</td></tr>"
