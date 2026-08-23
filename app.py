@@ -6,6 +6,7 @@ import datetime
 import tempfile
 import time
 import requests
+from collections import deque
 
 # 1. Page Configuration
 st.set_page_config(
@@ -18,12 +19,11 @@ st.set_page_config(
 TELEGRAM_BOT_TOKEN = "8944820080:AAEunj6B_dpTfRZewxh7r-W95U4MhU_GO1A"
 TELEGRAM_CHAT_ID = "8608774495"
 
-# 2. Executive Obsidian Crimson Theme with Clean Top Offset
+# 2. Executive Obsidian Crimson Theme
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
 
-    /* Shift page downward cleanly beneath the Streamlit top navbar */
     .block-container {
         padding-top: 5rem !important;
         padding-bottom: 2.5rem !important;
@@ -39,7 +39,6 @@ st.markdown("""
         color: #f8fafc;
     }
 
-    /* Fixed Top Command Header */
     .top-nav {
         background: linear-gradient(135deg, rgba(38, 7, 13, 0.95), rgba(18, 3, 6, 0.98));
         border: 1.5px solid #ff1744;
@@ -95,7 +94,6 @@ st.markdown("""
         box-shadow: 0 0 10px #00e676;
     }
 
-    /* 4-Tile Telemetry Row */
     .kpi-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -128,7 +126,6 @@ st.markdown("""
         margin-top: 4px;
     }
 
-    /* Sidebar Cards */
     .panel-card {
         background: rgba(22, 3, 7, 0.9);
         border: 1px solid rgba(255, 23, 68, 0.2);
@@ -147,11 +144,19 @@ st.markdown("""
         margin-bottom: 12px;
     }
 
-    /* Status Notifications */
     .incident-nominal {
         background: rgba(0, 230, 118, 0.12);
         border: 1px solid #00e676;
         border-left: 6px solid #00e676;
+        border-radius: 8px;
+        padding: 14px;
+        color: #ffffff;
+    }
+
+    .incident-suspected {
+        background: rgba(255, 145, 0, 0.18);
+        border: 1.5px solid #ff9100;
+        border-left: 6px solid #ff9100;
         border-radius: 8px;
         padding: 14px;
         color: #ffffff;
@@ -168,9 +173,9 @@ st.markdown("""
     }
 
     .incident-warning {
-        background: rgba(255, 145, 0, 0.18);
-        border: 1.5px solid #ff9100;
-        border-left: 6px solid #ff9100;
+        background: rgba(59, 130, 246, 0.18);
+        border: 1.5px solid #3b82f6;
+        border-left: 6px solid #3b82f6;
         border-radius: 8px;
         padding: 14px;
         color: #ffffff;
@@ -182,7 +187,6 @@ st.markdown("""
         100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
     }
 
-    /* SIEM Audit Table */
     .audit-table {
         width: 100%;
         border-collapse: collapse;
@@ -206,14 +210,13 @@ st.markdown("""
     }
 </style>
 
-<!-- Visible Header with Breathing Room -->
 <div class="top-nav">
     <div class="nav-brand">
         <span class="brand-badge">AEGIS RED</span>
         <span class="brand-title">Autonomous Edge Vision Command</span>
     </div>
     <div class="nav-telemetry">
-        <span><span class="status-dot"></span> NODE: <strong>ACTIVE</strong></span>
+        <span><span class="status-dot"></span> FSM: <strong>TEMPORAL 4-STATE</strong></span>
         <span>GATEWAY: <strong>192.168.1.104</strong></span>
         <span>PROTOCOL: <strong>RTSP / H.264</strong></span>
         <span style="background: rgba(255, 23, 68, 0.15); border: 1px solid #ff1744; padding: 4px 8px; border-radius: 4px; font-weight: 700; color: #ff1744;">ENTERPRISE PROD</span>
@@ -258,7 +261,6 @@ def load_model():
 model = load_model()
 
 def get_working_camera():
-    """Robust camera locator checking DirectShow on Windows."""
     for index in [0, 1, 2]:
         cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
         if cap.isOpened():
@@ -275,11 +277,54 @@ def get_working_camera():
             cap.release()
     return None
 
+# Temporal State Machine Storage
+class SubjectFSM:
+    def __init__(self):
+        self.state = "NORMAL" # NORMAL -> SUSPECTED -> CONFIRMED -> ALERTED
+        self.suspected_start_time = 0
+        self.history_y = deque(maxlen=15) # Store last 15 frames of Y coords
+        self.history_time = deque(maxlen=15)
+
+    def update(self, cy, is_horizontal_posture):
+        now = time.time()
+        self.history_y.append(cy)
+        self.history_time.append(now)
+
+        # 1. Calculate downward vertical velocity (pixels/second)
+        velocity_y = 0
+        if len(self.history_y) >= 6:
+            dy = self.history_y[-1] - self.history_y[0]
+            dt = self.history_time[-1] - self.history_time[0]
+            if dt > 0:
+                velocity_y = dy / dt # Positive = moving downwards
+
+        # 2. State Transitions
+        if self.state == "NORMAL":
+            # Rapid downward drop + horizontal orientation or collapse posture
+            if is_horizontal_posture and (velocity_y > 75 or len(self.history_y) < 6):
+                self.state = "SUSPECTED"
+                self.suspected_start_time = now
+
+        elif self.state == "SUSPECTED":
+            # If subject stands back up before threshold, false alarm -> reset
+            if not is_horizontal_posture:
+                self.state = "NORMAL"
+            elif (now - self.suspected_start_time) >= 1.5: # Remained down for 1.5s
+                self.state = "CONFIRMED"
+
+        elif self.state == "CONFIRMED":
+            # Ready for dispatch
+            if not is_horizontal_posture:
+                self.state = "NORMAL"
+
+        return self.state, velocity_y
+
 def process_stream(video_capture):
     fall_counter = 0
     intrusion_counter = 0
     frame_count = 0
     start_bench = time.time()
+    subject_tracker = SubjectFSM()
 
     while video_capture.isOpened():
         ret, frame = video_capture.read()
@@ -293,7 +338,6 @@ def process_stream(video_capture):
         h, w, _ = frame.shape
         zone_x1, zone_y1, zone_x2, zone_y2 = int(w * 0.6), int(h * 0.1), int(w * 0.95), int(h * 0.6)
 
-        # Draw Restricted Zone Boundary
         cv2.rectangle(frame, (zone_x1, zone_y1), (zone_x2, zone_y2), (0, 140, 255), 2)
         cv2.putText(frame, "RESTRICTED BOUNDARY [ZONE 01]", (zone_x1 + 8, zone_y1 + 20), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
@@ -301,8 +345,8 @@ def process_stream(video_capture):
         results = model(frame, conf=0.35, verbose=False)
         current_status = "NOMINAL"
         badge_class = "incident-nominal"
-        badge_header = "AREA SECURE // ALL SENSORS NOMINAL"
-        badge_sub = "No biomechanical anomalies or perimeter breaches flagged."
+        badge_header = "AREA SECURE // FSM: STATE NORMAL"
+        badge_sub = "Subject is upright. Velocity and posture within safe limits."
 
         for result in results:
             boxes = result.boxes.xyxy.cpu().numpy() if result.boxes else []
@@ -328,27 +372,37 @@ def process_stream(video_capture):
                         if abs(shoulder_y - hip_y) < 55:
                             is_skeleton_collapsed = True
 
+                is_horizontal = is_box_horizontal or is_skeleton_collapsed
+                fsm_state, vel_y = subject_tracker.update(cy, is_horizontal)
                 timestamp_str = datetime.datetime.now().strftime('%H:%M:%S')
 
-                # Critical Incident: Fall
-                if is_box_horizontal or is_skeleton_collapsed:
+                # Render State on Video Box
+                if fsm_state == "SUSPECTED":
+                    badge_class = "incident-suspected"
+                    badge_header = "VERIFYING: RAPID DESCENT DETECTED"
+                    badge_sub = f"Downward velocity: {int(vel_y)} px/s. Holding 1.5s temporal confirmation window..."
+                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (0, 165, 255), 2)
+                    cv2.putText(frame, "STATE: SUSPECTED FALL...", (bx1, by1 - 8), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 165, 255), 2)
+
+                elif fsm_state == "CONFIRMED":
                     current_status = "CRITICAL"
                     fall_counter += 1
                     badge_class = "incident-critical"
-                    badge_header = "CRITICAL INCIDENT: POSTURAL COLLAPSE"
-                    badge_sub = "Biomechanical collapse verified. Immediate responder dispatch initiated."
+                    badge_header = "CRITICAL INCIDENT: CONFIRMED FALL"
+                    badge_sub = "Biomechanical collapse sustained >1.5s. Autonomous dispatch triggered."
                     
-                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (0, 0, 255), 2)
-                    cv2.putText(frame, "INCIDENT: PATIENT COLLAPSE", (bx1, by1 - 8), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2)
+                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (0, 0, 255), 3)
+                    cv2.putText(frame, "STATE: CONFIRMED FALL", (bx1, by1 - 8), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                     
-                    alert_msg = f"🚨 *AEGIS CRITICAL ALERT*\n*Event:* Postural Fall / Collapse\n*Timestamp:* `{timestamp_str}`\n*Device ID:* CAM-01-PRIMARY"
+                    alert_msg = f"🚨 *AEGIS CRITICAL ALERT*\n*Event:* Sustained Fall/Collapse Verified (>1.5s)\n*Velocity:* `{int(vel_y)} px/s`\n*Timestamp:* `{timestamp_str}`"
                     send_telegram_alert(alert_msg)
 
                     if len(st.session_state.incident_log) == 0 or st.session_state.incident_log[-1]["type"] != "FALL":
                         st.session_state.incident_log.append({"time": timestamp_str, "type": "FALL", "loc": "CAM-01", "sev": "CRITICAL"})
 
-                # Warning Incident: Intrusion
+                # Intrusion Check
                 elif zone_x1 < cx < zone_x2 and zone_y1 < cy < zone_y2:
                     current_status = "WARNING"
                     intrusion_counter += 1
@@ -356,9 +410,9 @@ def process_stream(video_capture):
                     badge_header = "SECURITY EVENT: BOUNDARY BREACH"
                     badge_sub = "Unauthorized target detected inside virtual restricted zone [Zone 01]."
                     
-                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (0, 140, 255), 2)
+                    cv2.rectangle(frame, (bx1, by1), (bx2, by2), (255, 140, 0), 2)
                     cv2.putText(frame, "RESTRICTED AREA BREACH", (bx1, by1 - 8), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 140, 255), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 140, 0), 2)
                     
                     alert_msg = f"⚠️ *AEGIS SECURITY EVENT*\n*Event:* Perimeter Intrusion [Zone 01]\n*Timestamp:* `{timestamp_str}`"
                     send_telegram_alert(alert_msg)
@@ -378,8 +432,8 @@ def process_stream(video_capture):
                 <div class="kpi-val">{fps} <span style="font-size: 0.85rem; color: #fda4af;">FPS</span></div>
             </div>
             <div class="kpi-box" style="border-left-color: #00e676;">
-                <div class="kpi-label">System Health</div>
-                <div class="kpi-val" style="color: #00e676; font-size: 1.25rem; margin-top: 6px;">OPERATIONAL</div>
+                <div class="kpi-label">FSM State</div>
+                <div class="kpi-val" style="color: {'#ff1744' if subject_tracker.state=='CONFIRMED' else ('#ff9100' if subject_tracker.state=='SUSPECTED' else '#00e676')}; font-size: 1.15rem; margin-top: 8px;">{subject_tracker.state}</div>
             </div>
             <div class="kpi-box" style="border-left-color: #ff1744;">
                 <div class="kpi-label">Fall Events</div>
@@ -403,7 +457,7 @@ def process_stream(video_capture):
         </div>
         """, unsafe_allow_html=True)
 
-        # Live Audit Log
+        # SIEM Log
         recent_events = st.session_state.incident_log[-4:] if st.session_state.incident_log else []
         log_rows = "".join([
             f"<tr><td>{e['time']}</td><td style='color:{'#ff1744' if e['sev']=='CRITICAL' else '#ff9100'}; font-weight:700;'>{e['type']}</td><td>{e['loc']}</td><td>{e['sev']}</td></tr>"
